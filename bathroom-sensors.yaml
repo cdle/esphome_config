@@ -1,0 +1,210 @@
+esphome:
+  name: bathroom-sensors
+
+esp32:
+  board: nodemcu-32s
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "5FZXCLYt35Lhoehe1gIUf98qz/1+FEqWfwQJHvYjAto="
+
+ota:
+  password: "7becd23bca7ba95d828b6347388415a0"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Bathroom-Sensors"
+    password: "AZ02WHHYVbwn"
+
+captive_portal:
+    
+#引用组件库示例
+external_components:
+  - source: github://ryanh7/esphome-custom-components
+    components: [ cem5855h ]
+
+uart:
+  - id: uart_2
+    baud_rate: 115200
+    rx_pin: GPIO16 
+  - id: uart_1
+    baud_rate: 115200
+    rx_pin: RX #RX
+  # - id: uart_3
+  #   baud_rate: 115200
+  #   rx_pin: GPIO9 #D2
+
+i2c:
+  sda: GPIO21                    #RXD
+  scl: GPIO22                    #TXD
+  scan: true
+
+sensor:
+  - platform: bh1750
+    id: illu_shyt_raw
+    name: "illu_shyt_raw"
+    address: 0x23
+    update_interval: 10s
+    on_value:
+      if:
+        condition:
+          binary_sensor.is_off: shyt_motion
+        then:
+        - sensor.template.publish:
+            id: illu_shyt
+            state: !lambda 'return x ;'
+        
+  - platform: template
+    id: illu_shyt
+    device_class: illuminance
+    unit_of_measurement: "lx"
+    name: "illu_shyt"
+
+  - platform: wifi_signal
+    name: "ESP32S-WiFi Sensor"
+    update_interval: 60s
+
+  - platform: adc #浴室 空气污染
+    pin: GPIO34
+    name: bathroom_air_detector
+    id: bathroom_air_detector
+    update_interval: 6s
+    accuracy_decimals: 3
+    on_value:
+      if:
+        condition:
+          binary_sensor.is_off: bathroom_motion
+        then:
+        - sensor.template.publish:
+            id: bathroom_air_detector_average
+            state: !lambda 'return x ;'
+        else:
+        - sensor.template.publish:
+            id: bathroom_air_detector_deviation
+            state: !lambda 'return x - id(bathroom_air_detector_average).state;'  
+    
+
+  - platform: template #浴室 空气污染均值
+    device_class: voltage
+    id: bathroom_air_detector_average
+    name: bathroom_air_detector_average
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+    filters:
+      - sliding_window_moving_average: #求窗口平均值
+          window_size: 20
+          send_every: 1
+  
+  - platform: template #浴室 空气污染差值
+    device_class: voltage
+    id: bathroom_air_detector_deviation
+    name: bathroom_air_detector_deviation
+    unit_of_measurement: "V"
+    accuracy_decimals: 3
+        
+
+binary_sensor: 
+  - platform: gpio #浴室 毫米波雷达感应
+    pin: GPIO18
+    name: bathroom_motion
+    device_class: motion
+    id: bathroom_motion
+  - platform: gpio #洗漱台 人体红外感应
+    pin: GPIO32
+    name: xishutai_motion
+    device_class: motion
+    id: xishutai_motion
+    filters:
+      - delayed_off: 20s
+  - platform: gpio #生活阳台 人体红外感应
+    pin: GPIO27
+    name: shyt_motion
+    device_class: motion
+    id: shyt_motion
+    filters:
+      - delayed_off: 20s
+  - platform: gpio #走廊 毫米波雷达感应
+    pin: GPIO19
+    name: zoulang_motion
+    device_class: motion
+    id: zoulang_motion
+  - platform: gpio #厨房 人体红外感应
+    pin: GPIO23
+    name: chufang_red #PIR SR501
+    device_class: motion
+    id: chufang_red
+  - platform: cem5855h
+    id: chufang
+    uart_id: uart_1
+    threshold: #（可选）触发移动的阈值，支持数字或者Number(esphome)
+      moving: 250 #示例配置-数字
+      occupancy: #示例配置-esphome number
+        name: "chufang_occ"
+        value: 150 #阈值
+        min_value: 10 #可调节的最小阈值
+        max_value: 99999 #可调节的最大阈值
+        step: 10 #单步调节量
+    moving: #（可选）有人移动传感器
+      id: chufang_mov
+      name: chufang_mov
+      filters:
+        - delayed_off: 3s
+    occupancy: #（可选）有人静止传感器
+      id: chufang_occ
+      name: chufang_occ
+      filters:
+        - delayed_off: 3s
+    motion: #（可选）人在传感器
+      id: chufang_motion
+      name: chufang_motion
+      filters:
+        - delayed_off: 3s
+  - platform: gpio #餐厅 人体红外感应
+    pin: GPIO33
+    name: canting_red #PIR SR501
+    device_class: motion
+    id: canting_red
+  - platform: cem5855h
+    id: canting
+    uart_id: uart_2
+    threshold:
+      moving: 150
+      occupancy:
+        name: "canting_occ"
+        value: 100 
+        min_value: 10
+        max_value: 99999
+        step: 10
+    moving:
+      id: canting_mov
+      name: canting_mov
+      filters:
+        - delayed_off: 3s
+    occupancy:
+      id: canting_occ
+      name: canting_occ
+      filters:
+        - delayed_off: 3s
+    motion:
+      id: canting_motion
+      name: canting_motion
+      filters:
+        - delayed_off: 3s
+
+# switch:
+#   - platform: gpio
+#     pin: GPIO12
+#     # inverted: true
+#     name: "bathroom_nightlight"
+#     id: bathroom_nightlight
+
