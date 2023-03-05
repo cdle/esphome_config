@@ -104,6 +104,14 @@ sensor:
       - sliding_window_moving_average: #求窗口平均值
           window_size: 20
           send_every: 1
+    on_value:
+      if:
+        condition:
+          binary_sensor.is_off: bathroom_motion
+        then:
+        - sensor.template.publish:
+            id: bathroom_air_detector_deviation
+            state: !lambda 'return id(bathroom_air_detector).state - x;'      
   
   - platform: template #浴室 空气污染差值
     device_class: voltage
@@ -181,7 +189,7 @@ binary_sensor:
       moving: 150
       occupancy:
         name: "canting_occ"
-        value: 100 
+        value: 50 
         min_value: 10
         max_value: 99999
         step: 10

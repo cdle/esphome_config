@@ -74,7 +74,7 @@ captive_portal:
   #     filters:
   #       - delayed_off: 3s
 
-i2c:
+# i2c:
   # sda: GPIO21                    #RXD
   # scl: GPIO22                    #TXD
   # scan: true
@@ -86,25 +86,25 @@ i2c:
 #     address: 0x23
 #     update_interval: 2s
 
-external_components:
-  - source: github://snowyu/esphome-components
+# external_components:
+#   - source: github://snowyu/esphome-components
 
-amg88xx:
-  ir_camera:
-    name: amg8833_1_ir_camera
-  device_temperature:
-    name: amg8833_1_device_temperature
+# amg88xx:
+#   ir_camera:
+#     name: amg8833_1_ir_camera
+#   device_temperature:
+#     name: amg8833_1_device_temperature
 
 switch:
   - platform: gpio
-    pin: GPIO17
+    pin: GPIO5
     # inverted: true
-    name: "ESP32S-body light"
-    id: motion_02_light
+    name: test_light
+    id: test_light
 
-sensor:
-  - platform: adc
-    pin: GPIO34
-    name: test1
-    id: test1
-    unit_of_measurement: "V"
+# sensor:
+#   - platform: adc
+#     pin: GPIO34
+#     name: test1
+#     id: test1
+#     unit_of_measurement: "V"
