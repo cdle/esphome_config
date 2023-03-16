@@ -7,7 +7,7 @@ esp32:
     type: arduino
 
 # Enable logging
-logger:
+# logger:
 
 # Enable Home Assistant API
 api:
@@ -216,3 +216,14 @@ binary_sensor:
 #     name: "bathroom_nightlight"
 #     id: bathroom_nightlight
 
+
+light:
+  - platform: status_led
+    id: canting_xsq
+    name: "canting_xsq"
+    pin: GPIO26
+
+# light:
+#   - platform: ledc
+#     name: "Switch state"
+#     pin: GPIO26
